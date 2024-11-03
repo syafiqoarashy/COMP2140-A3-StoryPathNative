@@ -21,6 +21,9 @@
         "backgroundColor": "#ffffff"
       }
     },
+    "web": {
+      "bundler": "metro"
+    },
     "plugins": [
       "expo-router",
       "expo-image-picker",
@@ -31,9 +34,9 @@
         }
       ],
       [
-        "expo-barcode-scanner",
+        "expo-camera",
         {
-          "cameraPermission": "Allow StoryPath to access camera."
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
         }
       ]
     ],
