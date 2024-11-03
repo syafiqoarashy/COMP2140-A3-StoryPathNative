@@ -1,51 +1,10 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { Project, ProjectParticipantCount, Location, Tracking } from '@/constants/types';
 
 const API_BASE_URL = "https://0b5ff8b0.uqcloud.net/api";
 const JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic3R1ZGVudCIsInVzZXJuYW1lIjoiczQ4Mjk5MzgifQ.esXpKV6ZMnyUD_U-uBPS9Rh1GDGeWcsvb2uF5XI9onA";
 const USERNAME = "s4829938";
 
-// Define types based on the API schema
-export interface Project {
-    id: number;
-    title: string;
-    description: string | null;
-    is_published: boolean;
-    participant_scoring: string | null;
-    username: string;
-    instructions: string | null;
-    initial_clue: string | null;
-    homescreen_display: string | null;
-}
-
-export interface ProjectParticipantCount {
-    project_id: number;
-    number_participants: number;
-}
-
-export interface Location {
-    id: number;
-    project_id: number;
-    location_name: string;
-    location_trigger: string;
-    location_position: string | null;
-    location_order: number;
-    username: string;
-    location_content: string | null;
-    extra: string | null;
-    clue: string | null;
-    score_points: number | null;
-}
-
-export interface Tracking {
-    id: number;
-    project_id: number;
-    location_id: number;
-    username: string;
-    points: number | null;
-    participant_username: string | null;
-}
-
-// Create an Axios instance for API requests
 const api: AxiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {

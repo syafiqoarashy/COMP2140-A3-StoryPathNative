@@ -1,13 +1,15 @@
+// ProjectTabsLayout
 import React from 'react';
-import { Tabs, useNavigation } from 'expo-router';
+import { Tabs, useNavigation, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 
 export default function ProjectTabsLayout() {
   const navigation = useNavigation();
+  const { id } = useLocalSearchParams();
 
   return (
-    <Tabs 
+    <Tabs
       screenOptions={({ route }) => ({
         tabBarActiveTintColor: '#7862FC',
         headerLeft: () => (
@@ -23,6 +25,7 @@ export default function ProjectTabsLayout() {
           title: 'Home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
+        initialParams={{ id }}
       />
       <Tabs.Screen
         name="map"
@@ -30,6 +33,7 @@ export default function ProjectTabsLayout() {
           title: 'Map',
           tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} />,
         }}
+        initialParams={{ id }}
       />
       <Tabs.Screen
         name="qr-scanner"
@@ -37,6 +41,7 @@ export default function ProjectTabsLayout() {
           title: 'QR Scanner',
           tabBarIcon: ({ color, size }) => <Ionicons name="qr-code" size={size} color={color} />,
         }}
+        initialParams={{ id }}
       />
     </Tabs>
   );

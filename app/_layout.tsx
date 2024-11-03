@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { UserProvider } from './context/user';
+import { ProjectProvider } from './context/project';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import "../global.css";
@@ -21,10 +22,12 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-      <UserProvider>
+    <UserProvider>
+      <ProjectProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(drawer)" />
         </Stack>
-      </UserProvider>
+      </ProjectProvider>
+    </UserProvider>
   );
 }

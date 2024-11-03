@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUser } from '../context/user';
-import { getProjectParticipantCounts, getProjects, Project, ProjectParticipantCount } from '@/services/api';
+import { getProjectParticipantCounts, getProjects } from '@/services/api';
+import { Project } from '@/constants/types';
 
 type ProjectWithParticipantCount = Project & {
-  participant_count?: number;
+  participant_count: number;
 };
 
 export default function ProjectsScreen() {
@@ -18,23 +19,36 @@ export default function ProjectsScreen() {
     fetchProjects();
   }, []);
 
+  const getParticipantCount = async (projectId: number): Promise<number> => {
+    try {
+      const participantData = await getProjectParticipantCounts(projectId);
+      const count = participantData?.[0]?.number_participants ?? 0;
+      return count;
+    } catch (error) {
+      console.error(`Error fetching participant count for project ${projectId}:`, error);
+      return 0;
+    }
+  };
+
   const fetchProjects = async () => {
     try {
-      const projectsData: Project[] = await getProjects();
+      const projectsData = await getProjects();
       const publishedProjects = projectsData.filter(project => project.is_published);
+      
       const projectsWithCounts = await Promise.all(
-        publishedProjects.map(async (project: Project) => {
-          const [participantCount]: ProjectParticipantCount[] = await getProjectParticipantCounts(project.id);
+        publishedProjects.map(async (project) => {
+          const participant_count = await getParticipantCount(project.id);
           return {
             ...project,
-            participant_count: participantCount?.number_participants || 0,
+            participant_count
           };
         })
       );
+
       setProjects(projectsWithCounts);
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching projects:', error);
+    } finally {
       setLoading(false);
     }
   };

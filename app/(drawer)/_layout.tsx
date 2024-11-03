@@ -1,11 +1,11 @@
 import React from 'react';
 import { Drawer } from 'expo-router/drawer';
 import { useUser } from '../context/user';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, Button, TouchableOpacity } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 
 function CustomDrawerContent(props: any) {
-    const { username, profileImage } = useUser();
+    const { username, profileImage, logout } = useUser();
 
     return (
         <View className="flex-1">
@@ -18,7 +18,7 @@ function CustomDrawerContent(props: any) {
             </DrawerContentScrollView>
             
             <View className="p-4 border-t border-gray-300">
-                <View className="flex-row items-center">
+                <View className="flex-row items-center mb-4">
                     <Image
                         source={profileImage ? { uri: profileImage } : undefined}
                         className="w-12 h-12 rounded-full mr-3"
@@ -28,6 +28,19 @@ function CustomDrawerContent(props: any) {
                         <Text>{username || 'Not Set'}</Text>
                     </View>
                 </View>
+                
+                {username && (
+                    <TouchableOpacity
+                        onPress={logout}
+                        className="bg-[#7862FC] py-4 rounded-lg mb-6"
+                        style={{
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <Text className="text-white font-bold">Logout</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -68,6 +81,13 @@ export default function DrawerLayout() {
                 options={{
                     title: 'Profile',
                     drawerLabel: 'Profile',
+                }}
+            />
+            <Drawer.Screen
+                name="about"
+                options={{
+                    title: 'About',
+                    drawerLabel: 'About',
                 }}
             />
         </Drawer>

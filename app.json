@@ -22,7 +22,8 @@
       }
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -30,13 +31,13 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow StoryPath to use your location."
+          "locationWhenInUsePermission": "Allow StoryPath Player to access your location while using the app."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+          "cameraPermission": "Allow StoryPath Player to access your camera for scanning QR codes."
         }
       ]
     ],
