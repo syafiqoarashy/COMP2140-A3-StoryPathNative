@@ -11,6 +11,20 @@ interface ProjectOverviewProps {
   totalLocations: number;
 }
 
+/**
+ * ProjectOverview component provides an overview of the project,
+ * showing the title, instructions, initial clue, points, and visited locations count.
+ *
+ * @param {ProjectOverviewProps} props - Component props.
+ * @param {string} props.title - Project title.
+ * @param {string | null} props.instructions - Project instructions.
+ * @param {string | null} props.initialClue - Initial clue for the project.
+ * @param {number} props.points - Current points scored by the user.
+ * @param {number} props.maxPoints - Maximum points possible.
+ * @param {number} props.locationsVisitedCount - Number of locations visited by the user.
+ * @param {number} props.totalLocations - Total locations in the project.
+ * @returns {JSX.Element} The rendered project overview component.
+ */
 export function ProjectOverview({
   title,
   instructions,

@@ -8,6 +8,14 @@ interface LocationHistoryProps {
   toggleLocationExpansion: (locationId: number) => void;
 }
 
+/**
+ * LocationHistory component displays a list of visited locations.
+ *
+ * @param {LocationHistoryProps} props - Component props.
+ * @param {LocationContent[]} props.locationContents - Array of location data to display.
+ * @param {(locationId: number) => void} props.toggleLocationExpansion - Function to toggle location expansion.
+ * @returns {JSX.Element} The rendered list of visited locations.
+ */
 export function LocationHistory({ 
   locationContents, 
   toggleLocationExpansion 

@@ -12,6 +12,20 @@ interface LocationItemProps {
   toggleExpand: () => void;
 }
 
+/**
+ * LocationItem component displays information about a single location,
+ * including the name, participant count, content, and clue.
+ *
+ * @param {LocationItemProps} props - Component props.
+ * @param {string} props.locationName - Name of the location.
+ * @param {number} props.participantCount - Number of previous visitors to the location.
+ * @param {string | null} props.locationContent - HTML content describing the location.
+ * @param {string | null} props.clue - Clue for the next location.
+ * @param {boolean} props.isExpanded - Flag indicating if the item is expanded.
+ * @param {boolean} props.isCurrent - Flag indicating if this location is the current location.
+ * @param {() => void} props.toggleExpand - Function to toggle item expansion.
+ * @returns {JSX.Element} The rendered location item.
+ */
 export function LocationItem({
   locationName,
   participantCount,

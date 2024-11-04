@@ -1,9 +1,19 @@
 import React from 'react';
 import { Drawer } from 'expo-router/drawer';
 import { useUser } from '../context/user';
-import { View, Text, Image, Button, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 
+/**
+ * CustomDrawerContent component renders the custom drawer content,
+ * displaying the app name, navigation items, and user profile information.
+ *
+ * @param {object} props - Properties passed down from the Drawer.
+ * @param {object[]} props.state - State object containing the navigation state.
+ * @param {Function} props.navigation - Navigation prop for drawer item actions.
+ * @param {Function} props.descriptors - Descriptor for each route.
+ * @returns {JSX.Element} The rendered custom drawer content.
+ */
 function CustomDrawerContent(props: any) {
     const { username, profileImage, logout } = useUser();
 
@@ -46,18 +56,20 @@ function CustomDrawerContent(props: any) {
     );
 }
 
+/**
+ * DrawerLayout component sets up the main drawer navigation layout,
+ * defining screens and custom styles for each drawer item.
+ *
+ * @returns {JSX.Element} The rendered drawer layout with navigation screens.
+ */
 export default function DrawerLayout() {
     return (
         <Drawer
             drawerContent={(props) => <CustomDrawerContent {...props} />}
             screenOptions={{
-                headerStyle: {
-                    backgroundColor: '#7862FC',
-                },
+                headerStyle: { backgroundColor: '#7862FC' },
                 headerTintColor: '#fff',
-                headerTitleStyle: {
-                    fontWeight: 'bold',
-                },
+                headerTitleStyle: { fontWeight: 'bold' },
                 drawerActiveTintColor: '#7862FC',
             }}
         >

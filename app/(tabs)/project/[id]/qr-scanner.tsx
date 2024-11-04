@@ -6,6 +6,7 @@ import {
     createTracking, 
     getLocation, 
     getParticipantTracking,
+    getVisitedLocations,
 } from '@/services/api';
 import { useUser } from '@/app/context/user';
 import { WebView } from 'react-native-webview';
@@ -17,6 +18,13 @@ interface ScannedData {
     location_id: string;
 }
 
+/**
+ * QRScannerScreen component allows users to scan QR codes for location-based tracking
+ * in a project. It provides error handling for invalid QR codes and manages state
+ * for user permissions and visited locations.
+ *
+ * @returns {JSX.Element} The QR scanner screen with camera and location content display.
+ */
 export default function QRScannerScreen() {
     const { id: projectId } = useLocalSearchParams();
     const { username } = useUser();
@@ -31,14 +39,17 @@ export default function QRScannerScreen() {
     useEffect(() => {
         const fetchVisitedLocations = async () => {
             try {
-                const trackingData = await getParticipantTracking(Number(projectId), username || "");
-                const visitedSet = new Set(trackingData.map((track: Tracking) => track.location_id));
-                setVisitedLocations(visitedSet);
+                const tracking = await getParticipantTracking(Number(projectId), username || "");
+                const locationIds = tracking.map(t => t.location_id);
+                const visitedLocs = await getVisitedLocations(Number(projectId), locationIds);
+                
+                setVisitedLocations(new Set(locationIds));
             } catch (error) {
                 console.error('Error fetching visited locations:', error);
+                Alert.alert("Error", "Failed to load visited locations.");
             }
         };
-
+    
         fetchVisitedLocations();
     }, [projectId, username]);
 
@@ -59,6 +70,12 @@ export default function QRScannerScreen() {
         );
     }
 
+    /**
+     * Parses QR data to extract project and location IDs.
+     *
+     * @param {string} data - The raw data from the QR code.
+     * @returns {ScannedData} The parsed project and location IDs.
+     */
     const parseQRData = (data: string): ScannedData => {
         const params = new URLSearchParams(data);
         return {
@@ -67,6 +84,13 @@ export default function QRScannerScreen() {
         };
     };
 
+    /**
+     * Handles the QR code scan, verifying the project and location IDs, and
+     * updating tracking data for the user.
+     *
+     * @async
+     * @param {{ data: string }} event - The scanned QR code data.
+     */
     const handleBarCodeScanned = async ({ data }: { data: string }) => {
         try {
             setScanned(true);
@@ -78,14 +102,12 @@ export default function QRScannerScreen() {
             }
 
             const locationId = Number(scannedData.location_id);
-
             if (visitedLocations.has(locationId)) {
                 setHasVisited(true);
                 return;
             }
 
-            const locationResponse = await getLocation(locationId);
-            const locationData = Array.isArray(locationResponse) ? locationResponse[0] : locationResponse;
+            const locationData = await getLocation(locationId);
             setCurrentLocation(locationData);
 
             await createTracking({
@@ -106,7 +128,7 @@ export default function QRScannerScreen() {
             setHasVisited(false);
         } catch (error) {
             console.error('Error processing QR code:', error);
-            Alert.alert('Error', 'Invalid QR code format');
+            Alert.alert('Error', 'Invalid QR code format or issue processing.');
         }
     };
 
@@ -142,23 +164,20 @@ export default function QRScannerScreen() {
             ) : (
                 <ScrollView className="flex-1 bg-white p-4">
                     <View className="mb-6">
-                        <Text className="text-2xl font-bold mb-2">{currentLocation.location_name}</Text>
-                        <Text className="text-lg text-purple-700">Points earned: {currentLocation.score_points}</Text>
-                        <Text className="text-md text-gray-600">Total points: {points}</Text>
+                        <Text className="text-lg font-semibold text-center">Welcome to</Text>
+                        <Text className="text-2xl font-bold mb-2 text-center">{currentLocation.location_name}</Text>
+                        <Text className="text-xl text-purple-700 mb-2 text-center">Points earned: {currentLocation.score_points}</Text>
                     </View>
 
                     {currentLocation.location_content && (
                         <View className="mb-6">
-                            <Text className="text-lg font-semibold mb-2">Location Content:</Text>
-                            <WebView
-                                source={{ html: currentLocation.location_content }}
-                                className="h-80"
-                            />
+                            <Text className="text-2xl font-bold mb-2">Congratulations!</Text>
+                            <Text className="text-lg mb-2">New location content will now appear on your home!</Text>
                         </View>
                     )}
 
                     {currentLocation.clue && (
-                        <View className="mt-6 p-4 bg-gray-100 rounded-lg">
+                        <View className="mt-2 p-4 bg-gray-100 rounded-lg">
                             <Text className="text-lg font-semibold mb-2">Next Clue:</Text>
                             <Text className="text-md text-gray-700">{currentLocation.clue}</Text>
                         </View>

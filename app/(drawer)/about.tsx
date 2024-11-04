@@ -1,11 +1,19 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 
+/**
+ * AboutScreen component provides information about the StoryPath platform,
+ * describing its purpose and key features for users.
+ *
+ * @returns {JSX.Element} The about screen displaying details about StoryPath.
+ */
 export default function AboutScreen() {
     return (
         <ScrollView className="flex-1 bg-white p-4">
             <View className="mb-6">
-                <Text className="text-2xl font-bold text-center text-[#7862FC] mb-4">About STORYPATH</Text>
+                <Text className="text-2xl font-bold text-center text-[#7862FC] mb-4">
+                    About STORYPATH
+                </Text>
                 <Text className="text-lg leading-6 text-gray-700">
                     STORYPATH is an interactive platform designed to help you explore journeys
                     through various locations and experiences.

@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Alert } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { 
-  getLocations, 
   getProject,
   getParticipantTracking,
+  getProjectLocations,
+  getVisitedLocations,
 } from '@/services/api';
 import { useUser } from '@/app/context/user';
 import { useLocalSearchParams } from 'expo-router';
-import { getDistance } from 'geolib';
 import { LocationCoords, Project, Tracking, Location as LocationType } from '@/constants/types';
 
+/**
+ * MapScreen component displays a map with markers for unlocked and available project locations.
+ * It handles live location tracking and manages location-based data fetching.
+ *
+ * @returns {JSX.Element} The map screen displaying user location and project markers.
+ */
 export default function MapScreen() {
     const { id } = useLocalSearchParams();
     const projectId = id ? Number(id) : NaN;
@@ -27,6 +33,7 @@ export default function MapScreen() {
     useEffect(() => {
         if (isNaN(projectId)) {
             console.error("Invalid projectId:", projectId);
+            Alert.alert("Error", "Invalid project ID.");
             setLoading(false);
             return;
         }
@@ -36,6 +43,7 @@ export default function MapScreen() {
                 await Promise.all([setupLocation(), fetchProjectData()]);
             } catch (error) {
                 console.error('Error initializing data:', error);
+                Alert.alert("Error", "Failed to initialize data. Please try again.");
             } finally {
                 setLoading(false);
             }
@@ -44,11 +52,18 @@ export default function MapScreen() {
         initializeData();
     }, [projectId]);
 
+    /**
+     * Sets up user location tracking with permission checks and updates user location in real-time.
+     *
+     * @async
+     * @returns {Promise<void>} Sets up location tracking or logs errors if permission is denied.
+     */
     const setupLocation = async () => {
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 console.error('Permission to access location was denied');
+                Alert.alert("Location Permission", "Permission to access location is required to use the map.");
                 return;
             }
 
@@ -78,36 +93,52 @@ export default function MapScreen() {
             };
         } catch (error) {
             console.error('Error setting up location:', error);
+            Alert.alert("Error", "Failed to access location. Please try again.");
         }
     };
 
+    /**
+     * Fetches project details, locations, and participant tracking data.
+     * Updates the project, locations, and unlocked locations based on tracking data.
+     *
+     * @async
+     */
     const fetchProjectData = async () => {
         try {
             const projectData = await getProject(projectId);
-            const currentProject = Array.isArray(projectData) ? projectData[0] : projectData;
-            setProject(currentProject);
+            setProject(projectData);
 
-            const allLocations = await getLocations();
-            const projectLocations = allLocations.filter(loc => loc.project_id === projectId);
+            const projectLocations = await getProjectLocations(projectId);
             setLocations(projectLocations);
 
             if (username) {
                 const tracking = await getParticipantTracking(projectId, username);
                 setTrackingData(tracking);
 
-                const unlockedLocationIds = new Set(tracking.map(t => t.location_id));
-                const unlockedLocs = projectLocations.filter(loc => unlockedLocationIds.has(loc.id));
-                setUnlockedLocations(unlockedLocs);
+                const locationIds = tracking.map(t => t.location_id);
+                const visitedLocs = await getVisitedLocations(projectId, locationIds);
+                setUnlockedLocations(visitedLocs);
             }
         } catch (error) {
             console.error('Error fetching project data:', error);
+            Alert.alert("Error", "Could not load project data. Please try again later.");
         }
     };
 
+    /**
+     * Determines whether to display all project locations on the map based on project settings.
+     *
+     * @returns {boolean} True if all locations should be displayed, false otherwise.
+     */
     const shouldDisplayAllLocations = () => {
         return project?.homescreen_display === "Display all locations";
     };
 
+    /**
+     * Returns the locations that should be visible on the map based on user progress and project settings.
+     *
+     * @returns {LocationType[]} Array of locations to be displayed on the map.
+     */
     const getVisibleLocations = () => {
         if (shouldDisplayAllLocations()) {
             return locations;

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { 
   getProject, 
-  getLocations, 
   getParticipantTracking,
-  getLocationsByProjectId, 
-  getLocationParticipantCounts 
+  getLocationParticipantCounts, 
+  getProjectLocations,
+  getVisitedLocations
 } from '@/services/api';
 import * as ExpoLocation from 'expo-location';
 import { getDistance } from 'geolib';
@@ -16,6 +16,12 @@ import { ProjectOverview } from '@/components/project/ProjectOverview';
 import { useProject } from '@/app/context/project';
 import { LocationContent, Project, Tracking, Location } from '@/constants/types';
 
+/**
+ * ProjectScreen component displays details of a selected project, including
+ * an overview, visited locations, and live location tracking for nearby locations.
+ *
+ * @returns {JSX.Element} The project screen with location-based tracking and project details.
+ */
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams();
   const { username } = useUser();
@@ -60,6 +66,7 @@ export default function ProjectScreen() {
         await startLocationTracking();
       } catch (error) {
         console.error('Error initializing data:', error);
+        Alert.alert("Initialization Error", "An error occurred while initializing data.");
       } finally {
         setLoading(false);
       }
@@ -68,6 +75,11 @@ export default function ProjectScreen() {
     initializeData();
   }, []);
 
+  /**
+   * Toggles the expansion of a location in the location history view.
+   *
+   * @param {number} locationId - The ID of the location to toggle.
+   */
   const toggleLocationExpansion = (locationId: number) => {
     setLocationContents(prevContents => 
       prevContents.map(content => ({
@@ -77,60 +89,72 @@ export default function ProjectScreen() {
     );
   };
 
+  /**
+   * Fetches the participant count for a specific location.
+   *
+   * @async
+   * @param {number} locationId - The ID of the location.
+   * @returns {Promise<number>} The participant count or 0 if an error occurs.
+   */
   const fetchParticipantCount = async (locationId: number): Promise<number> => {
     try {
       const participantCounts = await getLocationParticipantCounts(locationId);
-      return participantCounts[0]?.number_participants ?? 0;
+      return participantCounts?.number_participants ?? 0;
     } catch (error) {
       console.error('Error fetching participant count:', error);
+      Alert.alert("Error", "Failed to load participant count for the location.");
       return 0;
     }
   };
 
+  /**
+   * Updates the location contents with the latest tracking data.
+   *
+   * @async
+   * @param {Tracking[]} trackingData - The user's tracking data for the project.
+   */
   const updateLocationContents = async (trackingData: Tracking[]) => {
-    const uniqueLocationIds = new Set<number>();
-    const updatedContents: LocationContent[] = [];
-    let totalPoints = 0;
+    try {
+      const uniqueLocationIds = [...new Set(trackingData.map(t => t.location_id))];
+      let totalPoints = trackingData.reduce((sum, track) => sum + (track.points || 0), 0);
 
-    const sortedTracking = [...trackingData].sort((a, b) => b.id - a.id);
+      const visitedLocations = (await getVisitedLocations(Number(id), uniqueLocationIds)).reverse();
+      const participantCounts = await Promise.all(
+        visitedLocations.map(loc => fetchParticipantCount(loc.id))
+      );
 
-    for (const track of sortedTracking) {
-      if (!uniqueLocationIds.has(track.location_id)) {
-        uniqueLocationIds.add(track.location_id);
+      const updatedContents: LocationContent[] = visitedLocations.map((location, index) => ({
+        location,
+        participantCount: participantCounts[index],
+        isExpanded: index === 0
+      }));
 
-        const location = locations.find(loc => loc.id === track.location_id);
-        if (location) {
-          const participantCount = await fetchParticipantCount(location.id);
-          updatedContents.push({
-            location,
-            participantCount,
-            isExpanded: updatedContents.length === 0
-          });
-
-          totalPoints += track.points || 0;
-        }
+      if (updatedContents.length > 0) {
+        setCurrentLocation(updatedContents[0].location);
       }
-    }
 
-    if (updatedContents.length > 0) {
-      setCurrentLocation(updatedContents[0].location);
+      setLocationContents(updatedContents);
+      updatePoints(totalPoints);
+      updateVisitedLocations(new Set(uniqueLocationIds));
+    } catch (error) {
+      console.error('Error updating location contents:', error);
+      Alert.alert("Error", "Failed to update location contents.");
     }
-
-    setLocationContents(updatedContents);
-    updatePoints(totalPoints);
-    updateVisitedLocations(uniqueLocationIds);
   };
 
+  /**
+   * Fetches project data including project details, locations, and tracking data.
+   *
+   * @async
+   */
   const fetchProjectData = async () => {
     try {
       setDataInitialized(false);
 
       const projectData = await getProject(Number(id));
-      const currentProject = Array.isArray(projectData) ? projectData[0] : projectData;
-      setProject(currentProject);
+      setProject(projectData);
 
-      const allLocations = await getLocations();
-      const projectLocations = getLocationsByProjectId(allLocations, Number(id));
+      const projectLocations = await getProjectLocations(Number(id));
       setLocations(projectLocations);
 
       if (username) {
@@ -141,14 +165,21 @@ export default function ProjectScreen() {
       setDataInitialized(true);
     } catch (error) {
       console.error('Error fetching project data:', error);
-      throw error;
+      Alert.alert("Error", "Could not load project data. Please try again.");
     }
   };
 
+  /**
+   * Starts location tracking and checks for nearby locations.
+   *
+   * @async
+   * @returns {Promise<void>} The location tracking watcher or an error alert.
+   */
   const startLocationTracking = async () => {
     let { status } = await ExpoLocation.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       console.error('Permission to access location was denied');
+      Alert.alert("Location Permission", "Permission to access location is required.");
       return;
     }
 
@@ -160,13 +191,17 @@ export default function ProjectScreen() {
     );
   };
 
+  /**
+   * Checks if the user is near any unvisited locations and updates current location if within range.
+   *
+   * @async
+   * @param {{ latitude: number; longitude: number }} userLocation - The user's current location.
+   */
   const checkNearbyLocations = async (userLocation: { latitude: number; longitude: number }) => {
     if (!dataInitialized) return;
 
     for (const loc of locations) {
-      if (visitedLocations.has(loc.id)) {
-        continue;
-      }
+      if (visitedLocations.has(loc.id)) continue;
 
       if (loc.location_position) {
         const [lat, lng] = loc.location_position
@@ -180,7 +215,7 @@ export default function ProjectScreen() {
           if (distance < 400 && currentLocation?.id !== loc.id) {
             setCurrentLocation(loc);
             await fetchParticipantCount(loc.id);
-            const trackingData = await getParticipantTracking(Number(id), username ? username : "");
+            const trackingData = await getParticipantTracking(Number(id), username || "");
             updateTracking(trackingData);
           }
         }
